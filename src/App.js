@@ -23,11 +23,17 @@ function App() {
   const [board, setBoard] = useState(initializeBoard(initialSetupA, initialSetupB));
   const [currentPlayer, setCurrentPlayer] = useState('A');
   const [message, setMessage] = useState('');
-  const [history, setHistory] = useState([]); // Change to an array for a sequential history
+  const [history, setHistory] = useState([]); 
   const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [availableMoves, setAvailableMoves] = useState([]);
+  const [winner, setWinner] = useState(null);
 
   const handleMove = (character, move) => {
+    if (!character || !character.startsWith(currentPlayer)) {
+      setMessage(`It's ${currentPlayer}'s turn!`);
+      return;
+    }
+
     const [charRow, charCol] = findCharacter(character, board);
 
     if (charRow === null || charCol === null) {
@@ -40,7 +46,6 @@ function App() {
       const newBoard = board.map(row => [...row]);
       let killedCharacter = null;
 
-      // Combat: Remove opponent if present in path (for Hero1 and Hero2) or at destination (for all)
       const path = getPath(charRow, charCol, newRow, newCol, character);
       path.forEach(([row, col]) => {
         if (board[row][col].startsWith(opponentPlayer(currentPlayer))) {
@@ -53,11 +58,9 @@ function App() {
         killedCharacter = board[newRow][newCol];
       }
 
-      // Move character
       newBoard[charRow][charCol] = '';
       newBoard[newRow][newCol] = character;
 
-      // Update history with current move
       setHistory(prevHistory => [
         ...prevHistory,
         {
@@ -65,17 +68,18 @@ function App() {
           move,
           from: [charRow, charCol],
           to: [newRow, newCol],
-          killed: killedCharacter // Add killed character to history entry
+          killed: killedCharacter
         }
       ]);
 
       setBoard(newBoard);
       setMessage('');
-      setSelectedCharacter(null); // Reset selected character after move
-      setAvailableMoves([]); // Clear available moves after move
-      setCurrentPlayer(opponentPlayer(currentPlayer));
+      setSelectedCharacter(null); 
+      setAvailableMoves([]); 
+      setCurrentPlayer(opponentPlayer(currentPlayer)); 
 
       if (checkWinningCondition(newBoard)) {
+        setWinner(currentPlayer);
         setMessage(`${currentPlayer} wins!`);
         return;
       }
@@ -96,7 +100,7 @@ function App() {
   };
 
   const calculateNewPosition = (row, col, move, character) => {
-    const type = character.split('-')[1]; // Extract character type (P1, H1, H2)
+    const type = character.split('-')[1]; 
     switch (type) {
       case 'P1':
       case 'P2':
@@ -142,17 +146,10 @@ function App() {
   };
 
   const isValidMove = (oldRow, oldCol, newRow, newCol, character) => {
-    console.log(`Validating move: oldRow=${oldRow}, oldCol=${oldCol}, newRow=${newRow}, newCol=${newCol}`);
-    // Check if new position is within bounds
     const withinBounds = newRow >= 0 && newRow < 5 && newCol >= 0 && newCol < 5;
-    if (!withinBounds) {
-      console.log('Move is out of bounds.');
-      return false;
-    }
+    if (!withinBounds) return false;
 
-    // Check if the new position is empty or occupied by the opponent
     const isEmptyOrOpponent = board[newRow] && (board[newRow][newCol] === '' || board[newRow][newCol].startsWith(opponentPlayer(currentPlayer)));
-    console.log(`isEmptyOrOpponent=${isEmptyOrOpponent}`);
     return isEmptyOrOpponent;
   };
 
@@ -181,58 +178,60 @@ function App() {
   };
 
   const selectCharacter = (character) => {
-    setSelectedCharacter(character);
-    if (character.endsWith('H1')) {
-      setAvailableMoves(['L', 'R', 'F', 'B']);
-    } else if (character.endsWith('P1') || character.endsWith('P2') || character.endsWith('P3')) {
-      setAvailableMoves(['L', 'R', 'F', 'B']);
+    if (character.startsWith(currentPlayer)) {
+      setSelectedCharacter(character);
+      if (character.endsWith('H1')) {
+        setAvailableMoves(['L', 'R', 'F', 'B']);
+      } else if (character.endsWith('P1') || character.endsWith('P2') || character.endsWith('P3')) {
+        setAvailableMoves(['L', 'R', 'F', 'B']);
+      } else {
+        setAvailableMoves(['FL', 'FR', 'BR', 'BL']);
+      }
     } else {
-      setAvailableMoves(['FL', 'FR', 'BR', 'BL']);
+      setMessage(`It's ${currentPlayer}'s turn!`);
     }
   };
 
   return (
     <div className="App">
-      <h1>Chess-like Game</h1>
-      <h2>Current Player: {currentPlayer}</h2>
-      <div className="board">
-        {board.map((row, rowIndex) => (
-          <div key={rowIndex} className="row">
-            {row.map((cell, colIndex) => (
-              <div
-                key={colIndex}
-                className={`cell ${cell ? 'occupied' : ''}`}
-                onClick={() => selectCharacter(cell)}
-              >
-                {cell}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-      <div className="controls">
-        {selectedCharacter && (
-          <div>
-            <h3>Available Moves for {selectedCharacter}</h3>
-            {availableMoves.map((move) => (
-              <button key={move} onClick={() => handleMove(selectedCharacter, move)}>
+      <h1>Turn-Based Chess-Like Game</h1>
+      {winner && <h2 className="winner">{winner} wins!</h2>}
+      <div className="board-and-history">
+        <div className="board">
+          {board.map((row, rowIndex) => (
+            <div key={rowIndex} className="row">
+              {row.map((cell, colIndex) => (
+                <div
+                  key={colIndex}
+                  className={`cell ${selectedCharacter === cell ? 'selected' : ''}`}
+                  onClick={() => selectCharacter(cell)}
+                >
+                  {cell}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="controls">
+          <h3>Selected Character: {selectedCharacter}</h3>
+          <div className="move-buttons">
+            {availableMoves.map((move, index) => (
+              <button key={index} onClick={() => handleMove(selectedCharacter, move)}>
                 {move}
               </button>
             ))}
           </div>
-        )}
-      </div>
-      <div className="history">
-        <h2>Move History</h2>
-        {history.map((entry, index) => (
-          <div key={index} className="history-entry">
-            <h3>{entry.character} moved {entry.move}</h3>
-            <p>From: [{entry.from[0]}, {entry.from[1]}] To: [{entry.to[0]}, {entry.to[1]}]</p>
-            {entry.killed && <p>Killed: {entry.killed}</p>}
+          {message && <p className="message">{message}</p>}
+          <h3>Move History</h3>
+          <div className="history">
+            {history.map((entry, index) => (
+              <div key={index} className="history-entry">
+                {entry.character} moved {entry.move} from ({entry.from[0]}, {entry.from[1]}) to ({entry.to[0]}, {entry.to[1]}) {entry.killed && `and killed ${entry.killed}`}
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
-      <div className="message">{message}</div>
     </div>
   );
 }
