@@ -137,10 +137,10 @@ function App() {
 
   const moveHero2 = (row, col, move) => {
     switch (move) {
-      case 'FL': return currentPlayer === 'A' ? [row + 2, col - 2] : [row - 2, col + 2];
-      case 'FR': return currentPlayer === 'A' ? [row + 2, col + 2] : [row - 2, col - 2];
-      case 'BL': return currentPlayer === 'A' ? [row - 2, col - 2] : [row + 2, col + 2];
-      case 'BR': return currentPlayer === 'A' ? [row - 2, col + 2] : [row + 2, col - 2];
+      case 'FR': return currentPlayer === 'A' ? [row + 2, col - 2] : [row - 2, col + 2];
+      case 'FL': return currentPlayer === 'A' ? [row + 2, col + 2] : [row - 2, col - 2];
+      case 'BR': return currentPlayer === 'A' ? [row - 2, col - 2] : [row + 2, col + 2];
+      case 'BL': return currentPlayer === 'A' ? [row - 2, col + 2] : [row + 2, col - 2];
       default: return [row, col];
     }
   };
